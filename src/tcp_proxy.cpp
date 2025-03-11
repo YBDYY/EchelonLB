@@ -29,18 +29,28 @@ void client_handling(int client_sock){
 
 
     char buffer[4096];
-    ssize_t bytes_received;
+    ssize_t bytes_received,bytes_sent;
 
     //forwarding data between client and backedn
 
-     while ((bytes_received = recv(client_sock, buffer, sizeof(buffer), 0)) > 0) {
-        send(backend_sock, buffer, bytes_received, 0); 
-        bytes_received = recv(backend_sock, buffer, sizeof(buffer), 0);
-        if (bytes_received <= 0){
-            break;
-        }  
-        send(client_sock, buffer, bytes_received, 0); 
-    }
+     while(true){
+        //receiving data from client
+        bytes_received = recv(client_sock, buffer, sizeof(buffer),0);
+        if(bytes_received<=0) break;//client disconnect
+
+        //forwarding to backend
+        bytes_sent = send(backend_sock, buffer, bytes_received,0);
+        if(bytes_sent == - 1 ) break; //error sending to backend
+
+        //receive response from backend
+        bytes_received = send(backend_sock,buffer, bytes_received,0);
+        if(bytes_received<=0) break; //backend closed connection
+
+        //forward to client
+        bytes_sent = send(client_sock, buffer,bytes_received,0);
+        if(bytes_sent == -1 )break;// eror sending to client
+
+     }
 
     close(client_sock);
     close(backend_sock);
