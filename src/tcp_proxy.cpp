@@ -35,19 +35,32 @@ void client_handling(int client_sock){
      while(true){
         //receiving data from client
         bytes_received = recv(client_sock, buffer, sizeof(buffer),0);
-        if(bytes_received<=0) break;//client disconnect
+        if(bytes_received<=0){
+            std::cerr << "Client disconnected\n";
+            break;
+        } 
+
 
         //forwarding to backend
         bytes_sent = send(backend_sock, buffer, bytes_received,0);
-        if(bytes_sent == - 1 ) break; //error sending to backend
+        if(bytes_sent == - 1 ) {
+            std::cerr << "Error sending data to backend\n";
+            break;
+        }; 
 
         //receive response from backend
         bytes_received = send(backend_sock,buffer, bytes_received,0);
-        if(bytes_received<=0) break; //backend closed connection
+        if(bytes_received<=0) {
+            std::cerr <<"Backend closed connection\n"; 
+            break;
+        }
 
         //forward to client
         bytes_sent = send(client_sock, buffer,bytes_received,0);
-        if(bytes_sent == -1 )break;// eror sending to client
+        if(bytes_sent == -1 ){
+            std::cerr << "Error sending data to client\n";
+            break;
+        }
 
      }
 
