@@ -1,11 +1,10 @@
+#include "../include/tcp_proxy.h"
 #include <iostream>
 #include <cstring>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <unistd.h>
 
-#define LISTEN_PORT 8080
-#define BACKEND_PORT 9000
 
 void client_handling(int client_sock){
     int backend_sock = socket(AF_INET,SOCK_STREAM,0);
