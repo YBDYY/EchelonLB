@@ -26,6 +26,13 @@ void client_handling(int client_sock){
         return;
     }
 
+    struct timeval timeout{};
+    timeout.tv_sec = 60;
+    timeout.tv_usec = 0;
+    setsockopt(client_sock,SOL_SOCKET,SO_RCVTIMEO, &timeout, sizeof(timeout));
+    setsockopt(client_sock, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout));
+    setsockopt(backend_sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+    setsockopt(backend_sock, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout));
 
     char buffer[4096];
     ssize_t bytes_received,bytes_sent;
@@ -35,10 +42,14 @@ void client_handling(int client_sock){
      while(true){
         //receiving data from client
         bytes_received = recv(client_sock, buffer, sizeof(buffer),0);
-        if(bytes_received<=0){
-            std::cerr << "Client disconnected\n";
+        if (bytes_received <= 0) {
+            if (bytes_received == 0) {
+                std::cerr << "Client disconnected.\n";
+            } else {
+                std::cerr << "Timeout: No data received from client in 5 seconds. Closing connection.\n";
+            }
             break;
-        } 
+        }
 
 
         //forwarding to backend
@@ -52,7 +63,8 @@ void client_handling(int client_sock){
         bytes_received = send(backend_sock,buffer, bytes_received,0);
         if(bytes_received<=0) {
             std::cerr <<"Backend closed connection\n"; 
-            break;
+        }else{
+            std::cerr <<"Timeout: No response from the backend in 60 seconds. Closing connection\n";
         }
 
         //forward to client
