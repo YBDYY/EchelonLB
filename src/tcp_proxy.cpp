@@ -7,26 +7,50 @@
 #include <string>
 #include <mutex>
 #include <vector>
+#include <yaml-cpp/yaml.h>
 
 
-std::vector<std::pair<std::string, int>> backends ={
-    {"127.0.0.1",9000},
-    {"127.0.0.1",9001},
-    {"127.0.0.1",9002}
-};
 
+
+std::vector<std::pair<std::string, int>> backends;
 std::mutex backend_mutex;  
 int current_backend =0;
 
-//RR for next backend
-std::pair<std::string,int> get_next_backend(){
-    std::lock_guard<std::mutex>lock(backend_mutex);
-    std::pair<std::string,int> selected_backend = backends[current_backend];
+void load_backends(const std::string &config_file) {
+    YAML::Node config = YAML::LoadFile(config_file);
 
-    current_backend=(current_backend +1) % backends.size();
-
-    return selected_backend;
+    if (!config["backends"]) {
+        std::cerr << "Error: No 'backends' field in config.yaml\n";
+        return;
     }
+
+    backends.clear();  // Clear existing backends in case of reload
+    for (const auto &backend : config["backends"]) {
+        std::string ip = backend["ip"].as<std::string>();
+        int port = backend["port"].as<int>();
+        backends.emplace_back(ip, port);
+    }
+
+    if (backends.empty()) {
+        std::cerr << "Error: No backends loaded from config.yaml\n";
+    } else {
+        std::cout << "Loaded " << backends.size() << " backends from config.yaml\n";
+    }
+}
+
+
+std::pair<std::string, int> get_next_backend() {
+    std::lock_guard<std::mutex> lock(backend_mutex);
+    if (backends.empty()) {
+        std::cerr << "Error: No backends available\n";
+        return {"", -1};
+    }
+
+    std::pair<std::string, int> selected_backend = backends[current_backend];
+    current_backend = (current_backend + 1) % backends.size();
+    return selected_backend;
+}
+
 
 void client_handling(int client_sock){
 

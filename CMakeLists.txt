@@ -3,6 +3,8 @@ project(TCPProxy)
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_executable(tcp_proxy src/main.cpp src/tcp_proxy.cpp)
+find_package(yaml-cpp REQUIRED)
 
+add_executable(tcp_proxy src/main.cpp src/tcp_proxy.cpp)
+target_link_libraries(tcp_proxy yaml-cpp)
 target_include_directories(tcp_proxy PRIVATE include)

@@ -1,0 +1,10 @@
+server:
+  listen_port: 8080
+
+backends:
+  - ip: "127.0.0.1"
+    port: 9000
+  - ip: "127.0.0.1"
+    port: 9001
+  - ip: "127.0.0.1"
+    port: 9002

@@ -3,8 +3,15 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include "../include/tcp_proxy.h" 
+#include <yaml-cpp/yaml.h>
+
+
 
 int main(){
+
+    load_backends("../config.yaml");
+
+
     int server_sock = socket(AF_INET,SOCK_STREAM,0);
     if(server_sock== -1){
         std::cerr << "Failed to create server socket\n";
