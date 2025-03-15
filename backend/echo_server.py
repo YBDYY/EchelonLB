@@ -1,20 +1,23 @@
 import socket
-import sys
 
-def run_backend(port):
-    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_socket.bind(('127.0.0.1', port))
-    server_socket.listen(1)
-    print(f"Backend server listening on port {port}...")
-    
+server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server.bind(("127.0.0.1", 9001))
+server.listen(5)
+
+print("[INFO] Backend is running on port 9001")
+
+while True:
+    client_sock, addr = server.accept()
+    print(f"[INFO] Connection from {addr}")
+
     while True:
-        client_socket, _ = server_socket.accept()
-        print(f"Received connection on port {port}")
-        message = client_socket.recv(1024).decode()
-        print(f"Received: {message}")
-        client_socket.send(f"Echo from backend {port}: {message}".encode())
-        client_socket.close()
+        data = client_sock.recv(4096)
+        if not data:
+            print("[INFO] Client disconnected")
+            break  #Dont close the whole server, just this connection.
 
-if __name__ == "__main__":
-    port = int(sys.argv[1])
-    run_backend(port)
+        print(f"[INFO] Received: {data.decode().strip()}")
+        response = f"Echo from backend 9001: {data.decode()}"
+        client_sock.sendall(response.encode())
+
+    client_sock.close()
