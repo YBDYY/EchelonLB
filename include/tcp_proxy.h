@@ -10,6 +10,7 @@
 
 void client_handling(int client_sock);
 void load_backends(const std::string &config_file);
+int connect_with_retries(int sock, struct sockaddr *addr, socklen_t addrlen);
 
 
 #endif // TCP_PROXY_H
