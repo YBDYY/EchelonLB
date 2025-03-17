@@ -6,7 +6,11 @@
 
 #include <string>
 #include <vector>
+#include <mutex>
 
+extern std::vector<std::pair<std::string, int>> backends;
+extern std::mutex backend_mutex;
+extern int current_backend;
 
 void client_handling(int client_sock);
 void load_backends(const std::string &config_file);
