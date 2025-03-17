@@ -5,6 +5,6 @@ set(CMAKE_CXX_STANDARD 17)
 
 find_package(yaml-cpp REQUIRED)
 
-add_executable(tcp_proxy src/main.cpp src/tcp_proxy.cpp)
+add_executable(tcp_proxy src/main.cpp src/health_check.cpp src/tcp_proxy.cpp)
 target_link_libraries(tcp_proxy yaml-cpp)
 target_include_directories(tcp_proxy PRIVATE include)
