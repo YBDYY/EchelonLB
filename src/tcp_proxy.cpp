@@ -67,14 +67,13 @@ int connect_with_retries(int sock, struct sockaddr *addr, socklen_t addrlen){
     return -1;
 }
 
-
-
-
 void client_handling(int client_sock) {
     auto [backend_ip, backend_port] = get_next_backend();
+    std::cout << "[INFO] New client connected. Forwarding to backend: " << backend_ip << ":" << backend_port << "\n";
+
     int backend_sock = socket(AF_INET, SOCK_STREAM, 0);
     if (backend_sock == -1) {
-        std::cerr << "Error creating backend socket\n";
+        std::cerr << "[ERROR] Failed to create backend socket\n";
         close(client_sock);
         return;
     }
@@ -85,11 +84,13 @@ void client_handling(int client_sock) {
     inet_pton(AF_INET, backend_ip.c_str(), &backend_addr.sin_addr);
 
     if (connect_with_retries(backend_sock, (struct sockaddr*)&backend_addr, (socklen_t)sizeof(backend_addr)) < 0) {
-    perror("Failed to connect to backend after multiple attempts");
-    close(client_sock);
-    close(backend_sock);
-    return;
+        std::cerr << "[ERROR] Failed to connect to backend after multiple attempts\n";
+        close(client_sock);
+        close(backend_sock);
+        return;
     }
+
+    std::cout << "[INFO] Connection established: Client <-> Backend\n";
 
     struct timeval timeout{};
     timeout.tv_sec = 60;
@@ -102,57 +103,51 @@ void client_handling(int client_sock) {
     char buffer[4096];
     ssize_t bytes_received, bytes_sent;
 
-    
     while (true) {
-        // receiving data from client
         bytes_received = recv(client_sock, buffer, sizeof(buffer), 0);
         if (bytes_received <= 0) {
             if (bytes_received == 0) {
-                std::cerr << "Client disconnected.\n";
+                std::cout << "[INFO] Client disconnected.\n";
             } else {
-                std::cerr << "Timeout or error receiving from client. Closing connection.\n";
+                std::cerr << "[ERROR] Timeout or error receiving from client. Closing connection.\n";
             }
             break;
         }
 
-        // forwarding to backend
         ssize_t total_sent = 0;
         while (total_sent < bytes_received) {
             bytes_sent = send(backend_sock, buffer + total_sent, bytes_received - total_sent, 0);
             if (bytes_sent == -1) {
-                std::cerr << "Error sending data to backend\n";
+                std::cerr << "[ERROR] Error sending data to backend\n";
                 break;
             }
             total_sent += bytes_sent;
         }
 
-        // receiving response from backend
         bytes_received = recv(backend_sock, buffer, sizeof(buffer), 0);
         if (bytes_received <= 0) {  
             if (bytes_received == 0) {
-                std::cerr << "Backend closed connection.\n";
+                std::cout << "[INFO] Backend closed connection.\n";
             } else {
-                std::cerr << "Timeout or error receiving from backend. Closing connection.\n";
+                std::cerr << "[ERROR] Timeout or error receiving from backend. Closing connection.\n";
             }
             break;
         }
 
-        // forward response to client
         total_sent = 0;
         while (total_sent < bytes_received) {
             bytes_sent = send(client_sock, buffer + total_sent, bytes_received - total_sent, 0);
             if (bytes_sent == -1) {
-                std::cerr << "Error sending data to client\n";
+                std::cerr << "[ERROR] Error sending data to client\n";
                 break;
             }
             total_sent += bytes_sent;
         }
     }
 
-    
+    std::cout << "[INFO] Closing connection for client.\n";
     close(client_sock);
     close(backend_sock);
 }
-
 
 
