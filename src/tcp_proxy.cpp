@@ -1,4 +1,3 @@
-#include "../include/tcp_proxy.h"
 #include <iostream>
 #include <cstring>
 #include <sys/socket.h>
@@ -8,7 +7,7 @@
 #include <mutex>
 #include <vector>
 #include <yaml-cpp/yaml.h>
-
+#include "../include/tcp_proxy.h"
 
 
 
@@ -53,7 +52,8 @@ std::pair<std::string, int> get_next_backend() {
 }
 
 int connect_with_retries(int sock, struct sockaddr *addr, socklen_t addrlen){
-    int max_attempts = 10;
+   constexpr int max_attempts = 10;
+    constexpr int retry_delay_us = 500000;//0.5 secs
     for (int attempt = 1; attempt <= max_attempts; attempt++){
         int ret = connect(sock, addr, addrlen);
         if (ret == 0) {
@@ -62,7 +62,7 @@ int connect_with_retries(int sock, struct sockaddr *addr, socklen_t addrlen){
         }
         std::cerr << "[ERROR] Failed to connect to backend on attempt " << attempt << ": ";
         perror("Connect error");
-        sleep(1);
+        usleep(retry_delay_us);
     }
     return -1;
 }
@@ -84,7 +84,7 @@ void client_handling(int client_sock) {
     backend_addr.sin_port = htons(backend_port);
     inet_pton(AF_INET, backend_ip.c_str(), &backend_addr.sin_addr);
 
-    if (connect_with_retries(backend_sock, (struct sockaddr*)&backend_addr, sizeof(backend_addr)) < 0) {
+    if (connect_with_retries(backend_sock, (struct sockaddr*)&backend_addr, (socklen_t)sizeof(backend_addr)) < 0) {
     perror("Failed to connect to backend after multiple attempts");
     close(client_sock);
     close(backend_sock);
@@ -153,7 +153,6 @@ void client_handling(int client_sock) {
     close(client_sock);
     close(backend_sock);
 }
-
 
 
 
