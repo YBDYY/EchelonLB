@@ -13,6 +13,7 @@ extern std::mutex backend_mutex;
 extern int current_backend;
 
 void client_handling(int client_sock);
+std::pair<std::string, int > get_next_backend();
 void load_backends(const std::string &config_file);
 int connect_with_retries(int sock, struct sockaddr *addr, socklen_t addrlen);
 
