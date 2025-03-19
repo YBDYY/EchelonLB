@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 #include <mutex>
+#include <sys/socket.h>
 
 extern std::vector<std::pair<std::string, int>> backends;
 extern std::mutex backend_mutex;
