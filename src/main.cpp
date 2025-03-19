@@ -1,11 +1,13 @@
+#include "../include/ncurses_ui.h"
+#include "../include/health_check.h"
+#include "../include/tcp_proxy.h" 
 #include <iostream>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <unistd.h>
-#include "../include/tcp_proxy.h" 
 #include <yaml-cpp/yaml.h>
-#include "../include/health_check.h"
 #include <thread>
+
 
 
 
@@ -16,6 +18,8 @@ int main() {
 
     
     std::thread health_check_thread(monitor_backends);
+
+    start_ncurses_ui();
 
     
     int server_sock = socket(AF_INET, SOCK_STREAM, 0);
