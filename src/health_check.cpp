@@ -6,8 +6,6 @@
 #include <thread>
 #include "../include/tcp_proxy.h"  
 
- bool is_ncurses_ui_active = false;
-
 void health_check(const std::string& ip, int port) {
     int sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock == -1) {
@@ -21,13 +19,9 @@ void health_check(const std::string& ip, int port) {
     inet_pton(AF_INET, ip.c_str(), &server_addr.sin_addr);
 
     if (connect(sock, (struct sockaddr*)&server_addr, sizeof(server_addr)) == 0) {
-        if (!is_ncurses_ui_active) {
-            std::cout << "Server " << ip << ":" << port << " is healthy.\n"; 
-        }
+        std::cout << "✅ Server " << ip << ":" << port << " is healthy.\n"; 
     } else {
-        if (!is_ncurses_ui_active) {
-            perror(("Failed to connect to " + ip + ":" + std::to_string(port)).c_str()); 
-        }
+        std::cerr << "❌ Failed to connect to " << ip << ":" << port << "\n";
     }
 
     close(sock);
@@ -36,11 +30,9 @@ void health_check(const std::string& ip, int port) {
 void monitor_backends() {
     std::vector<std::thread> threads;  
     for (const auto& backend : backends) {
-        
-        threads.push_back(std::thread(health_check, backend.first, backend.second));
+        threads.emplace_back(health_check, backend.first, backend.second);
     }
     
-   
     for (auto& t : threads) {
         if (t.joinable()) {
             t.join();  

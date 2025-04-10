@@ -2,8 +2,9 @@
 #define HEALTH_CHECK_H
 
 #include <string>
+#include <atomic>
 
-extern bool is_ncurses_ui_active;
+extern std::atomic<bool> is_ncurses_ui_active;
 
 void health_check(const std::string& ip,int port);
 void monitor_backends();

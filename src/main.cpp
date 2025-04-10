@@ -1,25 +1,29 @@
-#include "../include/ncurses_ui.h"
 #include "../include/health_check.h"
-#include "../include/tcp_proxy.h" 
+#include "../include/tcp_proxy.h"
+#include "../include/backend_monitor.h"
 #include <iostream>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <yaml-cpp/yaml.h>
 #include <thread>
+#include <future>
+#include <atomic>
 
-
-
+extern std::atomic<bool> is_ncurses_ui_active;
+extern std::atomic<bool> is_running;
 
 int main() {
+    
+    srand(time(0));
 
-   
     load_backends("../config.yaml");
 
     
     std::thread health_check_thread(monitor_backends);
 
-    start_ncurses_ui();
+    
+    
 
     
     int server_sock = socket(AF_INET, SOCK_STREAM, 0);
@@ -46,9 +50,9 @@ int main() {
     }
 
     std::cout << "Listening on port " << LISTEN_PORT << "...\n";
-
     
-    while (true) {
+
+    while (is_running) {
         sockaddr_in client_addr;
         socklen_t client_len = sizeof(client_addr);
         int client_sock = accept(server_sock, (struct sockaddr*)&client_addr, &client_len);
@@ -62,13 +66,12 @@ int main() {
         client_handling(client_sock);
     }
 
-   
-    close(server_sock);
-
     
-    if (health_check_thread.joinable()) {
-        health_check_thread.join();
-    }
+    close(server_sock);
+    is_running = false;  
+
+    if (health_check_thread.joinable()) health_check_thread.join();
+    
 
     return 0;
 }

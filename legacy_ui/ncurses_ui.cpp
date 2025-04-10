@@ -1,4 +1,4 @@
-#include "../include/ncurses_ui.h"
+
 #include "../include/tcp_proxy.h"
 #include <ncurses.h>
 #include <vector>
@@ -6,7 +6,37 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <chrono>
+#include <atomic>
+#include <iostream>
+#include <thread>
 
+std::atomic<bool> is_running(true);
+std::atomic<bool> is_ncurses_ui_active = false;
+
+void user_input_listener(){
+    while(is_running){
+        char ch = getch();
+        if(ch=='q'){
+            is_running = false;
+        }
+    }
+}
+
+void user_interface(){
+    while(true){
+        char ch;
+        std::cin >> ch;
+        if (ch == 'm' && !is_ncurses_ui_active) {
+            std::cout << "Starting ncurses UI...\n";
+            start_ncurses_ui();
+        } else if (ch == 'q') {
+            std::cout << "Exiting...\n";
+            is_running = false;
+            is_ncurses_ui_active = false;
+            break;
+        }
+    }
+}
 
 bool check_backend_status(const std::string& ip, int port) {
     int sock = socket(AF_INET, SOCK_STREAM, 0);
@@ -60,17 +90,17 @@ double get_backend_response_time(const std::string& ip,int port){
 
 }
 
-extern bool is_ncurses_ui_active;
-
 void start_ncurses_ui() {
+    if(is_ncurses_ui_active) return;
     is_ncurses_ui_active = true;
-    
+    is_running = true;
+
     initscr();
     noecho();
     curs_set(0);
     keypad(stdscr, TRUE);
+    timeout(100);
 
-    
     start_color();
     init_pair(1, COLOR_GREEN, COLOR_BLACK);  
     init_pair(2, COLOR_RED, COLOR_BLACK);     
@@ -82,7 +112,7 @@ void start_ncurses_ui() {
         "127.0.0.1:9002"
     };
 
-    while (true) {
+    while (is_running) {  
         clear();
         mvprintw(0, 2, "EchelonLB - Load Balancer monitor");
         mvprintw(1, 2, "Press 'q' to quit");
@@ -96,38 +126,33 @@ void start_ncurses_ui() {
             bool is_healthy = check_backend_status(ip, port);
             std::string status = is_healthy ? "Healthy" : "Unreachable";
 
-            double response_time = get_backend_response_time(ip,port);
+            double response_time = get_backend_response_time(ip, port);
 
-           
             if (is_healthy) {
-                attron(COLOR_PAIR(1));  
+                attron(COLOR_PAIR(1));
             } else {
-                attron(COLOR_PAIR(2));  
+                attron(COLOR_PAIR(2));
             }
 
             if (response_time < 0) {
-        
-        mvprintw(row + i, 4, "Backend %d: %s - %s (N/A)", 
-                 (int)(i + 1), ip_port.c_str(), status.c_str());
-    } else {
-       
-        mvprintw(row + i, 4, "Backend %d: %s - %s (%.2f s)", 
-                 (int)(i + 1), ip_port.c_str(), status.c_str(), response_time);
-    }
-
-
-            mvprintw(row + i, 4, "Backend %d: %s - %s", (int)(i + 1), ip_port.c_str(), status.c_str());
-
+                mvprintw(row + i, 4, "Backend %d: %s - %s (N/A)", (int)(i + 1), ip_port.c_str(), status.c_str());
+            } else {
+                mvprintw(row + i, 4, "Backend %d: %s - %s (%.2f s)", (int)(i + 1), ip_port.c_str(), status.c_str(), response_time);
+            }
             
-            attroff(COLOR_PAIR(1));  
-            attroff(COLOR_PAIR(2));  
+            attroff(COLOR_PAIR(1));
+            attroff(COLOR_PAIR(2));
         }
 
         refresh();
-        sleep(2);
+        sleep(2);  
 
+       
         int ch = getch();
-        if (ch == 'q') break;
+        if (ch == 'q') {
+            is_running = false;
+            break;
+        }
     }
 
     endwin();
