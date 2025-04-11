@@ -20,8 +20,15 @@
 ## Installation
 
 ### Prerequisites
+
+#### C++ Requirements
 - **C++ Compiler** (supporting C++17 or higher)
 - **CMake** (for building the C++ component)
+
+#### Python Requirements
+- **Python 3.8 or higher**
+- **pip**
+- **PyYAML** (`pip install pyyaml`)
 
 ### Steps
 1. Clone the repository:
